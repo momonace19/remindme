@@ -59,10 +59,16 @@ class Mwebhook {
 	}
 
 	public function deleteWebhookAndReminders($webhook_id) {
-		
-		$sql = "DELETE wh, r FROM webhook wh 
+		//ARTE NG POSTGRESQL!!!!
+		/*$sql = "DELETE wh, r FROM webhook wh 
 				JOIN reminder r USING(webhook_id)
-				WHERE webhook_id = '$webhook_id'";
+				WHERE webhook_id = '$webhook_id'";*/
+
+		$sql = "DELETE FROM webhook WHERE webhook_id = '$webhook_id'";
+
+		$this->conn->exec($sql);
+
+		$sql = "DELETE FROM reminder WHERE webhook_id = '$webhook_id'";
 
 		// use exec() because no results are returned
 	    return $this->conn->exec($sql);
