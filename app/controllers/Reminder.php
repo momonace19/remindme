@@ -12,15 +12,13 @@ class Reminder {
 
 	private $mreminder;
 	private $mwebhook;
-	private $content;
 	private $message;
 	private $base_url;
 
-	public function __construct($content = '', $message = '') {
+	public function __construct($message = '') {
 
 		$this->mreminder = new Mreminder();
 		$this->mwebhook = new Mwebhook();
-		$this->content = $content;
 		$this->message = $message;
 		$this->base_url = 'https://discordapp.com/api/';
 	}
@@ -166,7 +164,7 @@ class Reminder {
 
 		$has_error = TRUE;
 
-		$channel = explode('<', $this->content);
+		$channel = explode('<', $this->message->content);
 
 		unset($channel[0]);
 
@@ -205,7 +203,7 @@ class Reminder {
 
 			} else {
 
-				$discord_webhook_exist = checkCLientWebHook($this->base_url, $db_webhook_exist);
+				$discord_webhook_exist = $this->checkCLientWebHook($db_webhook_exist);
 
 				$discord_webhook_exist = json_decode($discord_webhook_exist, TRUE);
 
@@ -224,14 +222,14 @@ class Reminder {
 				} else {
 
 					$url = $this->base_url."webhooks/{$db_webhook_exist['webhook_id']}";
-print_r($url);
+
 					$data = array('channel_id' => $channel_id);
-print_r($data);
+
 					//update webhook
 					$discord_webhook_updated = $this->curlToDiscord('PATCH', $url, $data);
 
 					$discord_webhook_updated = json_decode($discord_webhook_updated, TRUE);
-print_r($discord_webhook_updated);
+
 					// returns 1 in postgresql even with no changes
 					$ctr = $this->mwebhook->updateWebHookChannel($discord_webhook_updated['channel_id'], $discord_webhook_updated['guild_id']);
 
@@ -308,7 +306,7 @@ print_r($discord_webhook_updated);
 
 			curl_setopt($ch, CURLOPT_HTTPHEADER, array(                                                                          
 			    'Content-Type: application/json',                                                                                
-			    'Authorization: Bot '.getenv('token'))                                                                     
+			    'Authorization: Bot'.getenv('token'))
 			);   
 		}                                                                                                               
                                                                                                                  

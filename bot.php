@@ -39,7 +39,7 @@ $discord->on('ready', function ($discord) {
 
         		$method =  strtok($content, " ");
 
-                $reminder = new Reminder($content, $message);
+                $reminder = new Reminder($message);
 
         		if( method_exists($reminder, $method) ) {
 
