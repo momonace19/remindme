@@ -71,13 +71,17 @@ class Reminder {
 
 		$respond = '';
 
+		$ctr = 1;
+
 		$allReminders = $this->mreminder->show();
 
 		if(is_array($allReminders)) {
 
 			foreach ($allReminders as $keys => $reminder) {
 			
-				$respond .= PHP_EOL."[{$reminder['id']}] <{$reminder['message']}> <{$reminder['timess']}> <{$reminder['repeats']}>";
+				$respond .= PHP_EOL."[{$ctr}] <{$reminder['message']}> <{$reminder['timess']}> <{$reminder['repeats']}>";
+
+				$ctr++;
 			}
 		}
 
