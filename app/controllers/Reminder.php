@@ -229,7 +229,7 @@ class Reminder {
 					$discord_webhook_updated = $this->curlToDiscord('PATCH', $url, $data);
 
 					$discord_webhook_updated = json_decode($discord_webhook_updated, TRUE);
-
+print_r($discord_webhook_updated);
 					// returns 1 in postgresql even with no changes
 					$ctr = $this->mwebhook->updateWebHookChannel($discord_webhook_updated['channel_id'], $discord_webhook_updated['guild_id']);
 
