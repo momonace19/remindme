@@ -32,7 +32,7 @@ class Reminder {
 		if(!empty($db_webhook)) {
 
 			$client_webhook = $this->checkCLientWebHook($db_webhook);
-
+print_r($client_webhook);
 			$client_webhook = json_decode($client_webhook,TRUE);
 
 			//client webhook exist
