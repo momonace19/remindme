@@ -218,11 +218,11 @@ class Reminder {
 
 					//update webhook
 					$discord_webhook_updated = $this->curlToDiscord('PATCH', $url, $data);
-print_r($discord_webhook_updated);
+
 					$discord_webhook_updated = json_decode($discord_webhook_updated, TRUE);
 
 					$ctr = $this->mwebhook->updateWebHookChannel($discord_webhook_updated['channel_id'], $discord_webhook_updated['guild_id']);
-
+print_r($ctr);
 					if($ctr === 1) {
 
 						$respond = "Reminder channel updated to $channel.";
