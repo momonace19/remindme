@@ -166,7 +166,7 @@ class Reminder {
 		$guild_channels = $this->curlToDiscord('GET', $url);
 
 		$guild_channels = json_decode($guild_channels,TRUE);
-print_r($guild_channels);
+
 		// match channel name to get channel id
 		foreach ($guild_channels as $key => $value) {
 			
@@ -289,7 +289,7 @@ print_r($guild_channels);
 
 			curl_setopt($ch, CURLOPT_HTTPHEADER, array(                                                                          
 			    'Content-Type: application/json',                                                                                
-			    'Authorization: Bot NTExNzQ2OTM4MTg2NzYwMTky.DsveEw.Bl-OetM_R9mhwle-ByjPXCW4s8g')                                                                     
+			    'Authorization: Bot '.getenv('token'))                                                                     
 			);   
 		}                                                                                                               
                                                                                                                  
