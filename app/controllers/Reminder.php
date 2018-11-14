@@ -232,7 +232,7 @@ class Reminder {
 
 					// returns 1 in postgresql even with no changes
 					$ctr = $this->mwebhook->updateWebHookChannel($discord_webhook_updated['channel_id'], $discord_webhook_updated['guild_id']);
-var_dump($ctr);
+
 					if($ctr === 1) {
 
 						$respond = "Reminder channel updated to $channel.";
