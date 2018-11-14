@@ -166,7 +166,7 @@ class Reminder {
 		$guild_channels = $this->curlToDiscord('GET', $url);
 
 		$guild_channels = json_decode($guild_channels,TRUE);
-
+print_r($guild_channels);
 		// match channel name to get channel id
 		foreach ($guild_channels as $key => $value) {
 			
