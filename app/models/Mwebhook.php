@@ -47,7 +47,7 @@ class Mwebhook {
 
 	public function updateWebHookChannel($channel_id, $guild_id) {
 
-		$sql = "UPDATE webhook SET channel_id='$channel_id' WHERE guild_id=$guild_id";
+		$sql = "UPDATE webhook SET channel_id='$channel_id' WHERE guild_id='$guild_id'";
 
 	    // Prepare statement
 	    $stmt = $this->conn->prepare($sql);
