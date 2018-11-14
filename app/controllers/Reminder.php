@@ -306,7 +306,7 @@ class Reminder {
 
 			curl_setopt($ch, CURLOPT_HTTPHEADER, array(                                                                          
 			    'Content-Type: application/json',                                                                                
-			    'Authorization: Bot'.getenv('token'))
+			    'Authorization: Bot '.getenv('token'))
 			);   
 		}                                                                                                               
                                                                                                                  
