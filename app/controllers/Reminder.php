@@ -14,6 +14,7 @@ class Reminder {
 	private $mwebhook;
 	private $content;
 	private $message;
+	private $base_url;
 
 	public function __construct($content = '', $message = '') {
 
@@ -21,44 +22,59 @@ class Reminder {
 		$this->mwebhook = new Mwebhook();
 		$this->content = $content;
 		$this->message = $message;
+		$this->base_url = 'https://discordapp.com/api/';
 	}
 
 	public function setreminder() {
 
-		$webhook = $this->mwebhook->getWebHook($this->message->channel->guild_id);
+		$db_webhook = $this->mwebhook->getWebHook($this->message->channel->guild_id);
 
-		if(!empty($webhook)) {
+		if(!empty($db_webhook)) {
 
-			$respond = $this->helpreminder();
+			$client_webhook = $this->checkCLientWebHook($db_webhook);
 
-			$reminderKeys = ['message', 'timess', 'repeats'];
+			$client_webhook = json_decode($client_webhook,TRUE);
 
-			$reminderInfo = explode('<', $this->message->content);
+			//client webhook exist
+			if(!isset($client_webhook['code'])) {
 
-			unset($reminderInfo[0]);
+				$respond = $this->helpreminder();
 
-			if(count($reminderInfo) === 3) {
+				$reminderKeys = ['message', 'timess', 'repeats'];
 
-				// remove > and change key's value
-				for ($i=1; $i < 4; $i++) { 
+				$reminderInfo = explode('<', $this->message->content);
 
-					$reminderInfo[$reminderKeys[$i-1]] = substr(trim($reminderInfo[$i]), 0, -1);
+				unset($reminderInfo[0]);
 
-					unset($reminderInfo[$i]);
+				if(count($reminderInfo) === 3) {
+
+					// remove > and change key's value
+					for ($i=1; $i < 4; $i++) { 
+
+						$reminderInfo[$reminderKeys[$i-1]] = substr(trim($reminderInfo[$i]), 0, -1);
+
+						unset($reminderInfo[$i]);
+					}
+
+					$reminderInfo['repeats'] = strtolower($reminderInfo['repeats']);
+
+					$reminderInfo['webhook_id'] = $db_webhook['webhook_id'];
+
+					$ctr = $this->mreminder->store($reminderInfo);
+
+					if($ctr === 1) {
+						$respond = "Reminder saved.";
+					} else {
+						$respond = 'Error saving';
+					}
 				}
+			} else {
 
-				$reminderInfo['repeats'] = strtolower($reminderInfo['repeats']);
+				$this->mwebhook->deleteWebhookAndReminders($db_webhook['webhook_id']);
 
-				$reminderInfo['webhook_id'] = $webhook['webhook_id'];
-
-				$ctr = $this->mreminder->store($reminderInfo);
-
-				if($ctr === 1) {
-					$respond = "Reminder saved.";
-				} else {
-					$respond = 'Error saving';
-				}
+				$respond = 'Reminder channel not yet configured.';
 			}
+
 		} else {
 
 			$respond = 'Reminder channel not yet configured.';
@@ -148,8 +164,6 @@ class Reminder {
 
 		$webhook_name = 'remindMe';
 
-		$base_url = 'https://discordapp.com/api/';
-
 		$has_error = TRUE;
 
 		$channel = explode('<', $this->content);
@@ -160,7 +174,7 @@ class Reminder {
 		$channel = substr(trim($channel[1]), 0, -1);
 
 		// url to get guild channels
-		$url = $base_url."guilds/{$this->message->channel->guild_id}/channels";
+		$url = $this->base_url."guilds/{$this->message->channel->guild_id}/channels";
 
 		// get guild channels
 		$guild_channels = $this->curlToDiscord('GET', $url);
@@ -187,14 +201,11 @@ class Reminder {
 			// if not exist, create. else update
 			if(!$db_webhook_exist) {
 
-				$respond = $this->createReminderChannel($webhook_name, $channel_id, $base_url);
+				$respond = $this->createReminderChannel($webhook_name, $channel_id, $this->base_url);
 
 			} else {
 
-				$url = $base_url."webhooks/{$db_webhook_exist['webhook_id']}/{$db_webhook_exist['webhook_token']}";
-
-				//check if guild also has the webhook
-				$discord_webhook_exist = $this->curlToDiscord('GET', $url);
+				$discord_webhook_exist = checkCLientWebHook($this->base_url, $db_webhook_exist);
 
 				$discord_webhook_exist = json_decode($discord_webhook_exist, TRUE);
 
@@ -207,12 +218,12 @@ class Reminder {
 					if($deleted > 0) {
 
 						// create new webhook
-						$respond = $this->createReminderChannel($webhook_name, $channel_id, $base_url);
+						$respond = $this->createReminderChannel($webhook_name, $channel_id, $this->base_url);
 					}
 
 				} else {
 
-					$url = $base_url."webhooks/{$db_webhook_exist['webhook_id']}";
+					$url = $this->base_url."webhooks/{$db_webhook_exist['webhook_id']}";
 
 					$data = array('channel_id' => $channel_id);
 
@@ -244,10 +255,10 @@ class Reminder {
 		return $respond;
 	}
 
-	private function createReminderChannel($webhook_name, $channel_id, $base_url) {
+	private function createReminderChannel($webhook_name, $channel_id) {
 
 		// url to create webhook
-		$url = $base_url."channels/{$channel_id}/webhooks";
+		$url = $this->base_url."channels/{$channel_id}/webhooks";
 
 		$data = array('name' => $webhook_name);
 
@@ -265,6 +276,14 @@ class Reminder {
 		}
 
 		return $respond;
+	}
+
+	private function checkCLientWebHook($db_webhook) {
+
+		$url = $this->base_url."webhooks/{$db_webhook['webhook_id']}/{$db_webhook['webhook_token']}";
+
+		//check if guild also has the webhook
+		return $discord_webhook_exist = $this->curlToDiscord('GET', $url);
 	}
 
 	public function curlToDiscord($method, $url, $data='', $header = TRUE) {
