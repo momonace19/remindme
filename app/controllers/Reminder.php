@@ -32,12 +32,12 @@ class Reminder {
 		if(!empty($db_webhook)) {
 
 			$client_webhook = $this->checkCLientWebHook($db_webhook);
-print_r($client_webhook);
-			$client_webhook = json_decode($client_webhook,TRUE);
 
+			$client_webhook = json_decode($client_webhook,TRUE);
+print_r($client_webhook);
 			//client webhook exist
 			if(!isset($client_webhook['code'])) {
-
+				echo 'qwe';
 				$respond = $this->helpreminder();
 
 				$reminderKeys = ['message', 'timess', 'repeats'];
@@ -69,9 +69,9 @@ print_r($client_webhook);
 					}
 				}
 			} else {
-
+				echo 'else';
 				$this->mwebhook->deleteWebhookAndReminders($db_webhook['webhook_id']);
-
+				echo 'after delete';
 				$respond = 'Reminder channel not yet configured.';
 			}
 
