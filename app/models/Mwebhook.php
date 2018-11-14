@@ -27,6 +27,16 @@ class Mwebhook {
 		return $stmt->fetch();
 	}
 
+	public function getWebHookTokenById($webhook_id) {
+
+		$stmt = $this->conn->prepare("SELECT webhook_token FROM webhook WHERE webhook_id='$webhook_id'"); 
+    	$stmt->execute();
+
+    	$result = $stmt->setFetchMode(PDO::FETCH_ASSOC); 
+
+		return $stmt->fetch();
+	}
+
 	public function setWebHook($guild_id, $channel_id, $webhook_details) {
 
 		$sql = "INSERT INTO webhook (guild_id, channel_id, webhook_id, webhook_token) VALUES ('$guild_id', '$channel_id', '{$webhook_details['id']}', '{$webhook_details['token']}')";
@@ -37,7 +47,7 @@ class Mwebhook {
 
 	public function updateWebHookChannel($channel_id, $guild_id) {
 
-		$sql = "UPDATE webhook SET channel_id = '$channel_id' WHERE guild_id = '$guild_id'";
+		$sql = "UPDATE webhook SET channel_id='$channel_id' WHERE guild_id=$guild_id";
 
 	    // Prepare statement
 	    $stmt = $this->conn->prepare($sql);
@@ -48,9 +58,11 @@ class Mwebhook {
 	    return $stmt->rowCount();
 	}
 
-	public function deleteWebHook($webhook_id) {
+	public function deleteWebhookAndReminders($webhook_id) {
 		
-		$sql = "DELETE FROM webhook WHERE webhook_id IN ($webhook_id)";
+		$sql = "DELETE wh, r FROM webhook wh 
+				JOIN reminder r USING(webhook_id)
+				WHERE webhook_id = '$webhook_id'";
 
 		// use exec() because no results are returned
 	    return $this->conn->exec($sql);

@@ -9,11 +9,13 @@ date_default_timezone_set('America/New_York');
 
 use App\controllers\Reminder;
 use App\models\Mreminder;
+use App\models\Mwebhook;
 
 class TimerCron {
 
 	private $reminder;
 	private $mreminder;
+	private $mwebhook;
 
 	public function __construct() {
 
@@ -21,6 +23,7 @@ class TimerCron {
 
 		$this->mreminder = new Mreminder;
 
+		$this->mwebhook = new Mwebhook;
 	}
 
 	public function checkTime() {
@@ -39,13 +42,11 @@ class TimerCron {
 
 				if($approved) {
 
-					$webhook_id = $this->mreminder->getWebHookIdByWebHookToken($value['webhook_token']);
+					$webhook_token = $this->mwebhook->getWebHookTokenById($value['webhook_id']);
 
-					$url = "https://discordapp.com/api/webhooks/{$webhook_id['webhook_id']}/{$value['webhook_token']}";
+					$url = "https://discordapp.com/api/webhooks/{$value['webhook_id']}/{$webhook_token['webhook_token']}";
 
-					$qwe = $this->reminder->curlToDiscord('POST', $url, $value['message'], FALSE);
-
-					print_r($qwe);
+					$this->reminder->curlToDiscord('POST', $url, $value['message'], FALSE);
 				}
 			}
 		}

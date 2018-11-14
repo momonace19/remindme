@@ -49,7 +49,7 @@ class Reminder {
 
 				$reminderInfo['repeats'] = strtolower($reminderInfo['repeats']);
 
-				$reminderInfo['webhook_token'] = $webhook['webhook_token'];
+				$reminderInfo['webhook_id'] = $webhook['webhook_id'];
 
 				$ctr = $this->mreminder->store($reminderInfo);
 
@@ -201,8 +201,8 @@ class Reminder {
 				// if no discord webhook exist
 				if(isset($discord_webhook_exist['code'])) {
 
-					//delete db_webhook
-					$deleted = $this->mwebhook->deleteWebhook($db_webhook_exist['webhook_id']);
+					//delete db_webhook and reminders
+					$deleted = $this->mwebhook->deleteWebhookAndReminders($db_webhook_exist['webhook_id']);
 
 					if($deleted > 0) {
 
@@ -221,9 +221,9 @@ class Reminder {
 
 					$discord_webhook_updated = json_decode($discord_webhook_updated, TRUE);
 
+					// returns 1 in postgresql even with no changes
 					$ctr = $this->mwebhook->updateWebHookChannel($discord_webhook_updated['channel_id'], $discord_webhook_updated['guild_id']);
 
-					// returns 1 in postgresql even with no changes
 					if($ctr === 1) {
 
 						$respond = "Reminder channel updated to $channel.";
