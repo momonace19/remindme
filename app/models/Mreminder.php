@@ -19,7 +19,8 @@ class Mreminder {
 
 	public function store(Array $reminderInfo) {
 
-		$sql = "INSERT INTO reminder (message, timess, repeats) VALUES ('$reminderInfo[message]', '$reminderInfo[timess]', '$reminderInfo[repeats]')";
+		$sql = "INSERT INTO reminder (message, timess, repeats, webhook_token) VALUES 
+				('$reminderInfo[message]', '$reminderInfo[timess]', '$reminderInfo[repeats]', '$reminderInfo[webhook_token]')";
 
 	    // use exec() because no results are returned
 	    return $this->conn->exec($sql);
@@ -37,7 +38,7 @@ class Mreminder {
 
 	public function showByTime($currTime) {
 
-		$stmt = $this->conn->prepare("SELECT message, repeats FROM reminder WHERE timess='$currTime'"); 
+		$stmt = $this->conn->prepare("SELECT message, repeats, webhook_token FROM reminder WHERE timess='$currTime'"); 
     	$stmt->execute();
 
     	$result = $stmt->setFetchMode(PDO::FETCH_ASSOC); 
@@ -51,6 +52,20 @@ class Mreminder {
 
 		// use exec() because no results are returned
 	    return $this->conn->exec($sql);
+	}
+
+	public function getWebHookIdByWebHookToken($webhook_token) {
+
+		$sql = "SELECT wh.webhook_id from webhook wh 
+				LEFT JOIN reminder r ON (wh.webhook_token = r.webhook_token)
+				WHERE wh.webhook_token = '$webhook_token'";
+
+		$stmt = $this->conn->prepare($sql); 
+    	$stmt->execute();
+
+    	$result = $stmt->setFetchMode(PDO::FETCH_ASSOC); 
+
+		return $stmt->fetch();
 	}
 }
 

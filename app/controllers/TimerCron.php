@@ -4,6 +4,7 @@ namespace App\controllers;
 
 include dirname( __FILE__, 3 ).'/vendor/autoload.php';
 
+// date_default_timezone_set('America/Los_Angeles');
 date_default_timezone_set('America/New_York');
 
 use App\controllers\Reminder;
@@ -38,7 +39,13 @@ class TimerCron {
 
 				if($approved) {
 
-					$this->reminder->postToDiscord($value['message']);
+					$webhook_id = $this->mreminder->getWebHookIdByWebHookToken($value['webhook_token']);
+
+					$url = "https://discordapp.com/api/webhooks/{$webhook_id['webhook_id']}/{$value['webhook_token']}";
+
+					$qwe = $this->reminder->curlToDiscord('POST', $url, $value['message'], FALSE);
+
+					print_r($qwe);
 				}
 			}
 		}

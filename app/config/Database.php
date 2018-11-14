@@ -7,7 +7,7 @@ use PDO;
 class Database {
 
 	public function connect() {
-		
+
 		/*$servername = "localhost";
 		$username = "root";
 		$password = "";
@@ -21,24 +21,16 @@ class Database {
 
 		$db = parse_url(getenv("DATABASE_URL"));
 
-		try {
-	$conn = new PDO("pgsql:" . sprintf(
-		"host=%s;port=%s;user=%s;password=%s;dbname=%s",
-		$db["host"],
-		$db["port"],
-		$db["user"],
-		$db["pass"],
-		ltrim($db["path"], "/")
-	));
+		$conn = new PDO("pgsql:" . sprintf(
+		    "host=%s;port=%s;user=%s;password=%s;dbname=%s",
+		    $db["host"],
+		    $db["port"],
+		    $db["user"],
+		    $db["pass"],
+		    ltrim($db["path"], "/")
+		));
 
-	$conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-// 	echo "Connected successfully"; 
-
-} catch(PDOException $e) {
-
-	echo "Connection failed: " . $e->getMessage();
-}
+		$conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 		return $conn;
 	}

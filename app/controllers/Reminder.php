@@ -5,46 +5,63 @@ namespace App\controllers;
 // include '../../vendor/autoload.php';
 
 use App\models\Mreminder;
-// use App\controllers\TimerCron;
+use App\models\Mwebhook;
+use App\controllers\TimerCron;
 
 class Reminder {
 
 	private $mreminder;
+	private $mwebhook;
+	private $content;
+	private $message;
 
-	public function __construct() {
+	public function __construct($content = '', $message = '') {
 
-		$this->mreminder = new Mreminder;
+		$this->mreminder = new Mreminder();
+		$this->mwebhook = new Mwebhook();
+		$this->content = $content;
+		$this->message = $message;
 	}
 
-	public function setreminder($message) {
+	public function setreminder() {
 
-		$respond = $this->helpreminder();
+		$webhook = $this->mwebhook->getWebHook($this->message->channel->guild_id);
 
-		$reminderKeys = ['message', 'timess', 'repeats'];
+		if(!empty($webhook)) {
 
-		$reminderInfo = explode('<', $message);
+			$respond = $this->helpreminder();
 
-		unset($reminderInfo[0]);
+			$reminderKeys = ['message', 'timess', 'repeats'];
 
-		if(count($reminderInfo) === 3) {
+			$reminderInfo = explode('<', $this->message->content);
 
-			// remove > and change key's value
-			for ($i=1; $i < 4; $i++) { 
+			unset($reminderInfo[0]);
 
-				$reminderInfo[$reminderKeys[$i-1]] = substr(trim($reminderInfo[$i]), 0, -1);
+			if(count($reminderInfo) === 3) {
 
-				unset($reminderInfo[$i]);
+				// remove > and change key's value
+				for ($i=1; $i < 4; $i++) { 
+
+					$reminderInfo[$reminderKeys[$i-1]] = substr(trim($reminderInfo[$i]), 0, -1);
+
+					unset($reminderInfo[$i]);
+				}
+
+				$reminderInfo['repeats'] = strtolower($reminderInfo['repeats']);
+
+				$reminderInfo['webhook_token'] = $webhook['webhook_token'];
+
+				$ctr = $this->mreminder->store($reminderInfo);
+
+				if($ctr === 1) {
+					$respond = "Reminder saved.";
+				} else {
+					$respond = 'Error saving';
+				}
 			}
+		} else {
 
-			$reminderInfo['repeats'] = strtolower($reminderInfo['repeats']);
-
-			$ctr = $this->mreminder->store($reminderInfo);
-
-			if($ctr === 1) {
-				$respond = "Reminder saved.";
-			} else {
-				$respond = 'Error saving';
-			}
+			$respond = 'Reminder channel not yet configured.';
 		}
 
 		return $respond;
@@ -67,13 +84,13 @@ class Reminder {
 		return !empty($respond) ? $respond : 'No reminders';
 	}
 
-	public function deletereminder($message) {
+	public function deletereminder() {
 
 		$error = FALSE;
 
 		$respond = $this->helpreminder();
 
-		$ids = explode('<', $message);
+		$ids = explode('<', $this->message);
 
 		unset($ids[0]);
 		
@@ -109,14 +126,17 @@ class Reminder {
 
 	public function helpreminder() {
 
-		$respond = PHP_EOL.'!setreminder - <message> <time ex. 23:05|06:02> <repeat ex. monday,wednesday|weekday|weekend|everyday>';
+		$respond = PHP_EOL.'!setreminder - <message> <time ex. 03:05> <repeat ex. monday,wednesday|weekday|weekend|everyday>';
 		$respond .= PHP_EOL."\t\tExample: !setreminder <World boss in 5 mins> <12:25> <everyday>";
 
 		$respond .= PHP_EOL.PHP_EOL.'!showreminder - Shows all reminders';
 		$respond .= PHP_EOL."\t\tExample: !showreminder";
 
-		$respond .= PHP_EOL.PHP_EOL.'!deletereminder - <number ex. 1,6,7|2|3|4|5>';
+		$respond .= PHP_EOL.PHP_EOL.'!deletereminder - <numbers from !showreminder ex. 1,6,7|2|3|4|5>';
 		$respond .= PHP_EOL."\t\tExample - !deletereminder <1> or if you want to delete multiple reminders !deletereminder <1,2,6,8>";
+
+		$respond .= PHP_EOL.PHP_EOL.'!setreminderchannel - Set what channel the reminder will be posted';
+		$respond .= PHP_EOL."\t\tExample - !helpreminder <general>";
 
 		$respond .= PHP_EOL.PHP_EOL.'!helpreminder - Show all commands';
 		$respond .= PHP_EOL."\t\tExample - !helpreminder";
@@ -124,16 +144,157 @@ class Reminder {
 		return $respond;
 	}
 
-	public function postToDiscord($message) {
+	public function setreminderchannel() {
 
-		$message = '@everyone '.$message;
+		$webhook_name = 'remindMe';
 
-		$data = array("content" => $message, "username" => "remindMe");
-	    $curl = curl_init("https://discordapp.com/api/webhooks/511051874812559360/_ilYnuxbnL-gB_CJYNS1Lr_VMS4g1YjmLThjgZib_Y_W-UB3CdXQlUOnCs-UcZ713rJx");
-	    curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
-	    curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
-	    curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-	    return curl_exec($curl);
+		$base_url = 'https://discordapp.com/api/';
+
+		$has_error = TRUE;
+
+		$channel = explode('<', $this->content);
+
+		unset($channel[0]);
+
+		// remove >
+		$channel = substr(trim($channel[1]), 0, -1);
+
+		// url to get guild channels
+		$url = $base_url."guilds/{$this->message->channel->guild_id}/channels";
+
+		// get guild channels
+		$guild_channels = $this->curlToDiscord('GET', $url);
+
+		$guild_channels = json_decode($guild_channels,TRUE);
+
+		// match channel name to get channel id
+		foreach ($guild_channels as $key => $value) {
+			
+			if($value['name'] == $channel) {
+
+				$channel_id = $value['id'];
+
+				$has_error = FALSE;
+			}
+		}
+
+		if(!$has_error) {
+
+			//change to $channel_id for reminder by channel but reminder by guild is okay for now
+			//check if already has webhook in db
+			$db_webhook_exist = $this->mwebhook->getWebHook($this->message->channel->guild_id);
+
+			// if not exist, create. else update
+			if(!$db_webhook_exist) {
+
+				$respond = $this->createReminderChannel($webhook_name, $channel_id, $base_url);
+
+			} else {
+
+				$url = $base_url."webhooks/{$db_webhook_exist['webhook_id']}/{$db_webhook_exist['webhook_token']}";
+
+				//check if guild also has the webhook
+				$discord_webhook_exist = $this->curlToDiscord('GET', $url);
+
+				$discord_webhook_exist = json_decode($discord_webhook_exist, TRUE);
+
+				// if no discord webhook exist
+				if(isset($discord_webhook_exist['code'])) {
+
+					//delete db_webhook
+					$deleted = $this->mwebhook->deleteWebhook($db_webhook_exist['webhook_id']);
+
+					if($deleted > 0) {
+
+						// create new webhook
+						$respond = $this->createReminderChannel($webhook_name, $channel_id, $base_url);
+					}
+
+				} else {
+
+					$url = $base_url."webhooks/{$db_webhook_exist['webhook_id']}";
+
+					$data = array('channel_id' => $channel_id);
+
+					//update webhook
+					$discord_webhook_updated = $this->curlToDiscord('PATCH', $url, $data);
+
+					$discord_webhook_updated = json_decode($discord_webhook_updated, TRUE);
+
+					$ctr = $this->mwebhook->updateWebHookChannel($discord_webhook_updated['channel_id'], $discord_webhook_updated['guild_id']);
+
+					if($ctr === 1) {
+
+						$respond = "Reminder channel updated to $channel.";
+					} else {
+
+						$respond = "Reminder channel is already set to $channel.";
+					}
+
+					return $respond;
+				}
+			}
+
+		} else {
+
+			$respond = 'Channel not available.';
+		}
+
+		return $respond;
+	}
+
+	private function createReminderChannel($webhook_name, $channel_id, $base_url) {
+
+		// url to create webhook
+		$url = $base_url."channels/{$channel_id}/webhooks";
+
+		$data = array('name' => $webhook_name);
+
+		// create webhook for the given channel
+		$webhook_details = $this->curlToDiscord('POST', $url, $data);
+
+		$webhook_details = json_decode($webhook_details, TRUE);
+
+		$ctr = $this->mwebhook->setWebHook($this->message->channel->guild_id, $channel_id, $webhook_details);
+
+		if($ctr === 1) {
+			$respond = "Channel saved.";
+		} else {
+			$respond = 'Error saving';
+		}
+
+		return $respond;
+	}
+
+	public function curlToDiscord($method, $url, $data='', $header = TRUE) {
+
+	    $ch = curl_init($url);     
+
+		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method); 
+
+		if($method != 'GET') {
+
+			if(!$header) {
+
+				$data = array("content" => $data);
+			}
+
+			curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));  
+		}                                             
+
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);                                                                      
+		
+		if($header) {
+
+			curl_setopt($ch, CURLOPT_HTTPHEADER, array(                                                                          
+			    'Content-Type: application/json',                                                                                
+			    'Authorization: Bot NTExNzQ2OTM4MTg2NzYwMTky.DsveEw.Bl-OetM_R9mhwle-ByjPXCW4s8g')                                                                     
+			);   
+		}                                                                                                               
+                                                                                                                 
+		$result = curl_exec($ch);
+
+		return $result;
 	}
 }
 
@@ -141,6 +302,6 @@ class Reminder {
 
 $qwe = new Reminder();
 
-print_r($qwe->setreminder($_POST['param']));
+// print_r($qwe->setreminder($_POST['param']));
 print_r($qwe->showreminder());
 print_r($timer->checkTime());*/
